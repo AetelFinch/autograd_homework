@@ -1,3 +1,4 @@
+import tor4
 from tor4 import mse_loss, tensor
 
 
@@ -229,6 +230,19 @@ def test_my_backward1():
     assert a.grad.tolist() == [2, 36, 6]
 
 
+def test_my_backward2():
+    a = tensor(data=[1, 2, 3], requires_grad=True)
+    b = tensor(data=[-1, 3, 1.0], requires_grad=True)
+    c = tensor(data=[2, 3, 4], requires_grad=True)
+    f = a * b - a * c
+
+    f.backward(tensor([1, 1, 1]))
+
+    assert a.grad.tolist() == [-3, 0, -3]
+    assert b.grad.tolist() == [1, 2, 3]
+    assert c.grad.tolist() == [-1, -2, -3]
+
+
 def test_mse_backward():
     inputs = tensor(data=[1.0, 2, 3], requires_grad=True)
     targets = tensor(data=[2, 3, 2])
@@ -241,3 +255,48 @@ def test_mse_backward():
     assert mse_nn.data == mse == 3
     assert mse_nn.requires_grad
     assert inputs.grad.tolist() == [-2, -2, 2]
+
+
+def test_simple():
+    x_ = 2.
+    y_ = 3.
+    x = tensor(data=[x_], requires_grad=True)
+    y = tensor(data=[y_], requires_grad=True)
+
+    f = x * y - (x - y)
+
+    f.backward()
+
+    assert x.grad.tolist() == [y_ - 1]
+    assert y.grad.tolist() == [x_ + 1]
+
+
+def test_simple1():
+    x_ = 2.
+    y_ = 3.
+    z_ = 4.
+    x = tensor(data=[x_], requires_grad=True)
+    y = tensor(data=[y_], requires_grad=True)
+    z = tensor(data=[z_], requires_grad=True)
+
+    f = (x * y) - (x * z * y - y)
+
+    f.backward()
+
+    assert x.grad.tolist() == [y_ - z_ * y_]
+    assert y.grad.tolist() == [x_ - x_ * z_ + 1]
+    assert z.grad.tolist() == [-x_ * y_]
+
+
+def test_simple2():
+    x_ = 2.
+    y_ = 0.
+    x = tensor(data=[x_], requires_grad=True)
+    y = tensor(data=[y_], requires_grad=True)
+
+    f = tor4.sigmoid(x * y)
+
+    f.backward()
+
+    assert x.grad.tolist() == [0]
+    assert y.grad.tolist() == [0.5]

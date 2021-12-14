@@ -87,6 +87,7 @@ class LinearModel:
         """Linear Model without explicit bias. Weights are initialized according to normal distribution"""
 
         self.weight = tor4.Tensor(data=np.random.normal(size=(in_features, n_classes)), requires_grad=True)
+        self.bias = np.array(-0.5)
 
     def __call__(self, x):
         return self.forward(x)
@@ -94,11 +95,12 @@ class LinearModel:
     def parameters(self):
         """Returns list of all trainable parameters"""
 
-        return self.weight
+        return [self.weight]
 
     def forward(self, x):
         """Performs forward pass"""
         a = x @ self.weight
+        a.data += self.bias
         y = a.sigmoid()
         return y
 
@@ -190,7 +192,7 @@ def main():
     model = get_model()
     criterion = get_criterion()
 
-    opt = get_optimizer(model.parameters())
+    opt = get_optimizer(model.parameters(), lr=1e-1)
 
     # Hyperparameters
     n_epochs = 100

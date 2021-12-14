@@ -45,7 +45,7 @@ class Tensor:
         return sigmoid(self)
 
     def zero_grad_(self) -> None:
-        self.grad = np.zeros_like(self.grad)
+        self.grad = Tensor(np.zeros(self.shape))
 
     def tolist(self):
         return self.data.tolist()
@@ -65,7 +65,10 @@ class Tensor:
             self.grad = Tensor(np.zeros_like(self.data))
 
         for depend in self.depends_on:
-            depend.tensor.grad = Tensor(depend.grad_fn(grad))
+            if depend.tensor.grad is None:
+                depend.tensor.grad = Tensor(depend.grad_fn(grad))
+            else:
+                depend.tensor.grad.data += depend.grad_fn(grad)
             depend.tensor.backward(depend.tensor.grad)
 
 
@@ -189,10 +192,12 @@ class SGD:
         self.lr = lr
 
     def step(self):
-        self.parameters.data -= self.parameters.grad.data * self.lr
+        for param in self.parameters:
+            param.data -= param.grad.data * self.lr
 
     def zero_grad(self):
-        self.parameters.zero_grad_()
+        for param in self.parameters:
+            param.zero_grad_()
 
 
 def mse_loss(inp: Tensor, target: Tensor) -> Tensor:
